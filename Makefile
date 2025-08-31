@@ -1,21 +1,31 @@
 CC = g++
 LANG_STD = c++17
-CFLAGS = -Wall -Wfatal-errors -g
-INCLUDE_PATH = -I"./libs"
-SRC_FILES = src/*.cpp \
-			src/ECS/*.cpp \
-			src/AssetStore/*.cpp \
-			libs/imgui/*.cpp
-LDFLAGS = -lSDL2 -lSDL2_image -lSDL2_ttf -lSDL2_mixer -llua 
-OBJ_NAME = gameengine
+CFLAGS = -Wall -Wfatal-errors -g -I"./libs" -std=$(LANG_STD)
+LDFLAGS = -lSDL2 -lSDL2_image -lSDL2_ttf -lSDL2_mixer -llua
+LIBS_FILES = $(wildcard libs/imgui/*.cpp)
+LIBS_OBJ_FILES = $(LIBS_FILES:libs/%.cpp=build/%.o)
+SRC_FILES = $(wildcard src/*.cpp) \
+			$(wildcard src/ECS/*.cpp) \
+			$(wildcard src/AssetStore/*.cpp)
+OBJ_FILES = $(SRC_FILES:src/%.cpp=build/%.o)
+GAME_EXEC_NAME = gameengine
 
-build:
-	$(CC) $(CFLAGS) -std=$(LANG_STD) $(INCLUDE_PATH) $(SRC_FILES) $(LDFLAGS) -o $(OBJ_NAME)
+$(GAME_EXEC_NAME): $(OBJ_FILES) $(LIBS_OBJ_FILES)
+	$(CC) $(LDFLAGS) $^ -o $@
+
+$(OBJ_FILES): build/%.o: src/%.cpp
+	@mkdir -p $(dir $@)
+	$(CC) $(CFLAGS) -c $< -o $@
+
+$(LIBS_OBJ_FILES): build/%.o: libs/%.cpp
+	@mkdir -p $(dir $@)
+	$(CC) $(CFLAGS) -c $< -o $@
 
 run:
-	./$(OBJ_NAME)
+	./$(GAME_EXEC_NAME)
 
 clean:
-	rm $(OBJ_NAME)
+	rm -rf $(GAME_EXEC_NAME)
+	rm -rf build
 
-.PHONY: clean build run
+.PHONY: clean run
