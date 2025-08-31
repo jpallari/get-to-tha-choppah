@@ -1,6 +1,6 @@
 CC = g++
 LANG_STD = c++17
-CFLAGS = -Wall -Wfatal-errors -g -I"./libs" -std=$(LANG_STD)
+CFLAGS = -Wall -Wfatal-errors -g -I"./libs" -std=$(LANG_STD) -MMD -MP
 LDFLAGS = -lSDL2 -lSDL2_image -lSDL2_ttf -lSDL2_mixer -llua
 LIBS_FILES = $(wildcard libs/imgui/*.cpp)
 LIBS_OBJ_FILES = $(LIBS_FILES:libs/%.cpp=build/%.o)
@@ -9,6 +9,9 @@ SRC_FILES = $(wildcard src/*.cpp) \
 			$(wildcard src/AssetStore/*.cpp)
 OBJ_FILES = $(SRC_FILES:src/%.cpp=build/%.o)
 GAME_EXEC_NAME = gameengine
+
+-include $(OBJ_FILES:.o=.d)
+-include $(LIBS_OBJ_FILES:.o=.d)
 
 $(GAME_EXEC_NAME): $(OBJ_FILES) $(LIBS_OBJ_FILES)
 	$(CC) $(LDFLAGS) $^ -o $@
