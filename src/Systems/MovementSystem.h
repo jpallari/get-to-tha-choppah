@@ -1,7 +1,7 @@
 #pragma once
 
-#include "../Components/RigidBodyComponent.h"
 #include "../Components/ProjectileEmitterComponent.h"
+#include "../Components/RigidBodyComponent.h"
 #include "../Components/SpriteComponent.h"
 #include "../Components/TransformComponent.h"
 #include "../ECS/ECS.h"
@@ -10,6 +10,7 @@
 #include "../Game.h"
 #include "../Logger.h"
 #include <SDL2/SDL_render.h>
+#include <algorithm>
 
 class MovementSystem : public System {
 public:
@@ -28,6 +29,7 @@ public:
         for (auto entity : GetSystemEntities()) {
             auto &transform = entity.GetComponent<TransformComponent>();
             const auto &rigidBody = entity.GetComponent<RigidBodyComponent>();
+
             transform.position.x += rigidBody.velocity.x * deltaTime;
             transform.position.y += rigidBody.velocity.y * deltaTime;
 
@@ -36,8 +38,21 @@ public:
                  transform.position.x > Game::mapWidth ||
                  transform.position.y < 0 ||
                  transform.position.y > Game::mapHeight);
-            if (isEntityOutsideMap && !entity.HasTag("player")) {
-                entity.Kill();
+            if (isEntityOutsideMap) {
+                if (entity.HasTag("player")) {
+                    transform.position.x = std::clamp(
+                        transform.position.x,
+                        0.0f,
+                        static_cast<float>(Game::mapWidth)
+                    );
+                    transform.position.y = std::clamp(
+                        transform.position.y,
+                        0.0f,
+                        static_cast<float>(Game::mapHeight)
+                    );
+                } else {
+                    entity.Kill();
+                }
             }
         }
     }
@@ -78,7 +93,8 @@ public:
                 }
             }
             if (enemy.HasComponent<ProjectileEmitterComponent>()) {
-                auto &emitter = enemy.GetComponent<ProjectileEmitterComponent>();
+                auto &emitter =
+                    enemy.GetComponent<ProjectileEmitterComponent>();
                 if (flipVelocityX) {
                     emitter.projectileVelocity.x *= -1;
                 }
