@@ -10,6 +10,11 @@
 #include <algorithm>
 #include <vector>
 
+struct RenderableEntity {
+    TransformComponent transformComponent;
+    SpriteComponent spriteComponent;
+};
+
 class RenderSystem : public System {
 public:
     RenderSystem() {
@@ -20,16 +25,38 @@ public:
     void Update(
         SDL_Renderer *renderer, AssetStore &assetStore, const SDL_Rect &camera
     ) {
-        std::vector<Entity> es = GetSystemEntities();
-        std::sort(es.begin(), es.end(), [](Entity a, Entity b) {
-            const auto &aSprite = a.GetComponent<SpriteComponent>();
-            const auto &bSprite = b.GetComponent<SpriteComponent>();
-            return aSprite.zIndex < bSprite.zIndex;
-        });
+        std::vector<RenderableEntity> renderableEntities;
+        for (auto &entity : GetSystemEntities()) {
+            const auto &t = entity.GetComponent<TransformComponent>();
+            const auto &s = entity.GetComponent<SpriteComponent>();
 
-        for (auto &entity : es) {
-            const auto &transform = entity.GetComponent<TransformComponent>();
-            const auto &sprite = entity.GetComponent<SpriteComponent>();
+            bool isEntityOutsideCameraView =
+                (t.position.x + t.scale.x * s.width < camera.x ||
+                 t.position.x > camera.x + camera.w ||
+                 t.position.y + t.scale.y * s.height < camera.y ||
+                 t.position.y > camera.y + camera.h);
+            if (isEntityOutsideCameraView && !s.isFixed) {
+                continue;
+            }
+
+            RenderableEntity renderableEntity{
+                t,
+                s,
+            };
+            renderableEntities.emplace_back(renderableEntity);
+        }
+
+        std::sort(
+            renderableEntities.begin(),
+            renderableEntities.end(),
+            [](RenderableEntity a, RenderableEntity b) {
+                return a.spriteComponent.zIndex < b.spriteComponent.zIndex;
+            }
+        );
+
+        for (auto &entity : renderableEntities) {
+            const auto &transform = entity.transformComponent;
+            const auto &sprite = entity.spriteComponent;
 
             const int cameraOffsetX = sprite.isFixed ? 0 : camera.x;
             const int cameraOffsetY = sprite.isFixed ? 0 : camera.y;
