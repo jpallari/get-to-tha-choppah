@@ -10,6 +10,8 @@ SRC_FILES = $(wildcard src/*.cpp) \
 OBJ_FILES = $(SRC_FILES:src/%.cpp=build/%.o)
 GAME_EXEC_NAME = gameengine
 
+all: gameengine
+
 -include $(OBJ_FILES:.o=.d)
 -include $(LIBS_OBJ_FILES:.o=.d)
 
